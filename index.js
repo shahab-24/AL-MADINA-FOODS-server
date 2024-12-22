@@ -28,6 +28,7 @@ async function run() {
   try {
 
 	const foodCollection = client.db("FoodsCollection").collection("foods")
+	const userCollection = client.db("FoodUsers").collection('user')
 
 	app.get('/foods', async(req, res) => {
 		const food = req.body;
@@ -52,6 +53,21 @@ async function run() {
 	// app.put('/food/:id', async(req, res) => {
 
 	// })
+
+
+	// user related APIs
+
+	app.get('/user', async(req,res) => {
+		const user = req.body;
+		const result = await userCollection.find(user).toArray()
+		res.send(result)
+	})
+
+	app.post('/user', async(req,res) => {
+		const user = req.body;
+		const result = await userCollection.insertOne(user);
+		res.send(result);
+	})
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     // Send a ping to confirm a successful connection
