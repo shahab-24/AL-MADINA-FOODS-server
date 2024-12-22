@@ -1,7 +1,9 @@
 const  express = require('express');
 const app = express();
 const cors = require('cors');
+require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { configDotenv } = require('dotenv');
 const port = process.env.PORT || 3000;
 
 
@@ -27,8 +29,8 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
 
-	const foodCollection = client.db("FoodsCollection").collection("foods")
-	const userCollection = client.db("FoodUsers").collection('user')
+	const foodCollection = client.db("FoodsCollection").collection("foods");
+	const userCollection = client.db("FoodUsersDB").collection('users')
 
 	app.get('/foods', async(req, res) => {
 		const food = req.body;
@@ -57,7 +59,7 @@ async function run() {
 
 	// user related APIs
 
-	app.get('/user', async(req,res) => {
+	app.get('/users', async(req,res) => {
 		const user = req.body;
 		const result = await userCollection.find(user).toArray()
 		res.send(result)
@@ -65,7 +67,8 @@ async function run() {
 
 	app.post('/user', async(req,res) => {
 		const user = req.body;
-		const result = await userCollection.insertOne(user);
+		console.log(user)
+		const result = await userCollection.insertOne(user)
 		res.send(result);
 	})
     // Connect the client to the server	(optional starting in v4.7)
