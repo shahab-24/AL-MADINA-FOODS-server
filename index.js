@@ -38,11 +38,11 @@ async function run() {
 		res.send(result)
 	})
 
-	// app.post('/foods', async(req, res) => {
-	// 	const food = req.body;
-	// 	const result = await foodCollection.insertOne(food)
-	// 	res.send(result)
-	// })
+	app.post('/add-foods', async(req, res) => {
+		const food = req.body;
+		const result = await foodCollection.insertOne(food)
+		res.send(result)
+	})
 
 	// app.delete('/food/:foodId', async (req,res) => {
 	// 	const id = req.params.foodId;
@@ -60,8 +60,8 @@ async function run() {
 	// user related APIs
 
 	app.get('/users', async(req,res) => {
-		const user = req.body;
-		const result = await userCollection.find(user).toArray()
+		
+		const result = await userCollection.find().toArray()
 		res.send(result)
 	})
 
