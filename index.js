@@ -43,10 +43,34 @@ async function run() {
 		const result = await foodCollection.find(query).sort({expireDate: 1}).toArray();
 		res.send(result)
 	})
+	
+	app.get("/food-details/:id", async(req,res) => {
+		const id = req.params.id;
+		
+		const query = {_id : new ObjectId(id)}
+		const result = await foodCollection.findOne(query)
+		res.send(result)
+
+	})
 
 	app.post('/add-foods', async(req, res) => {
 		const food = req.body;
 		const result = await foodCollection.insertOne(food)
+		res.send(result)
+	})
+
+	app.post('/request-food', async (req, res) => {
+		const {foodId, userEmail, requestDate, additionalNotes} =req.body;
+
+		const query = {_id: new ObjectId(foodId), "foodUser.foodStatus": "available"}
+		const result = await foodCollection.updateOne(query, {
+			$set: {
+				"foodUser.foodStatus":"requested",
+				requestedBy: {
+					userEmail, requestDate, additionalNotes
+				},
+			}
+		})
 		res.send(result)
 	})
 
