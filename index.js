@@ -37,6 +37,12 @@ async function run() {
 		const result = await foodCollection.find(food).toArray();
 		res.send(result)
 	})
+	app.get('/available-foods', async(req, res) => {
+		const query = {"foodUser.foodStatus": "available"}
+		// console.log(query)
+		const result = await foodCollection.find(query).sort({expireDate: 1}).toArray();
+		res.send(result)
+	})
 
 	app.post('/add-foods', async(req, res) => {
 		const food = req.body;
