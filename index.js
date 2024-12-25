@@ -38,6 +38,14 @@ async function run() {
 		const food = req.body;
 		const result = await foodCollection.find(food).toArray();
 		res.send(result)
+
+		
+	})
+
+	app.get('/featured-foods',async(req, res) => {
+		// const food = req.body;
+		const result = await foodCollection.find().sort({foodQuantity: 1}).limit(6).toArray()
+		res.send(result)
 	})
 	app.get('/available-foods', async(req, res) => {
 		const query = {"foodUser.foodStatus": "available"}
@@ -69,6 +77,36 @@ async function run() {
 		const result = await foodCollection.find(query).toArray();
 		res.send(result)
 	})
+
+	app.get('/recent-foods', async (req, res) => {
+		
+		  const recentFoods = await foodCollection.find().sort({ expireDate: -1 }).limit(5).toArray()
+		  res.send(recentFoods)
+
+		  
+		  
+	  });
+	  app.get('/donor-stats/all', async (req, res) => {
+		try {
+		  const allDonors = await foodCollection.aggregate([
+			{
+			  $group: {
+				_id: "$foodUser.donatorEmail", // Group by donator email
+				totalDonations: { $sum: 1 }, // Count the number of donations
+			  },
+			},
+			{ $sort: { totalDonations: -1 } }, // Sort by total donations (descending)
+		  ]).toArray();
+	  
+		  res.send(allDonors); // Send all donor stats
+		} catch (error) {
+		  console.error("Error fetching all donor stats:", error);
+		  res.status(500).send({ message: "Failed to fetch all donor stats" });
+		}
+	  });
+	  
+	  
+	  
 
 	app.patch('/myFood/:foodId',async(req,res)=> {
 		const  id = req.params.foodId;
@@ -121,13 +159,13 @@ async function run() {
 		res.send(result)
 	})
 
-	// app.delete('/food/:foodId', async (req,res) => {
-	// 	const id = req.params.foodId;
-	// 	const query = {_id: new ObjectId(id)}
-	// 	const result = await foodCollection.deleteOne(query)
-	// 	res.send(result)
+	app.delete('/myFood/:foodId', async (req,res) => {
+		const id = req.params.foodId;
+		const query = {_id: new ObjectId(id)}
+		const result = await foodCollection.deleteOne(query)
+		res.send(result)
 
-	// })
+	})
 
 	// app.put('/food/:id', async(req, res) => {
 
