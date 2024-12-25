@@ -63,6 +63,30 @@ async function run() {
 		res.send(result)
 	})
 
+	app.get('/myFood',async(req,res) => {
+		const {userEmail} = req.query;
+		const query = {"foodUser.donatorEmail": userEmail}
+		const result = await foodCollection.find(query).toArray();
+		res.send(result)
+	})
+
+	app.patch('/myFood/:foodId',async(req,res)=> {
+		const  id = req.params.foodId;
+		console.log(id)
+		const query = {_id: new ObjectId(id)};
+		console.log(query)
+		const updatedFood = req.body;
+		console.log(updatedFood)
+		const updatedDoc = {
+			$set: 
+				updatedFood
+			
+		}
+		const result= await foodCollection.updateOne(query, updatedDoc);
+		res.send(result)
+
+	})
+
 
 	app.post('/add-foods', async(req, res) => {
 		const food = req.body;
