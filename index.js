@@ -31,6 +31,8 @@ async function run() {
 
 	const foodCollection = client.db("FoodsCollection").collection("foods");
 	const userCollection = client.db("FoodUsersDB").collection('users')
+	
+	const requestedFoodCollection = client.db("requestedFoodDB").collection("requestedFood")
 
 	app.get('/foods', async(req, res) => {
 		const food = req.body;
@@ -53,16 +55,31 @@ async function run() {
 
 	})
 
+	app.get('/myRequest', async(req, res)=> {
+		const {userEmail} = req.query;
+	
+		const result = await foodCollection.find({"foodUser.foodStatus" : "requested", "requestedBy.userEmail": userEmail}).toArray()
+		// const result = await requestedFoodCollection.find({"requestedBy.userEmail": userEmail}).toArray()
+		res.send(result)
+	})
+
+
 	app.post('/add-foods', async(req, res) => {
 		const food = req.body;
 		const result = await foodCollection.insertOne(food)
 		res.send(result)
 	})
 
+
+	// API for food request=============
+
 	app.post('/request-food', async (req, res) => {
 		const {foodId, userEmail, requestDate, additionalNotes} =req.body;
 
+		// const food = await foodCollection.findOne({_id: new ObjectId(foodId)})
+
 		const query = {_id: new ObjectId(foodId), "foodUser.foodStatus": "available"}
+		// const query = {_id: new ObjectId(foodId)}
 		const result = await foodCollection.updateOne(query, {
 			$set: {
 				"foodUser.foodStatus":"requested",
@@ -71,6 +88,12 @@ async function run() {
 				},
 			}
 		})
+
+		// const requestedFood = { ...food, requestedBy: {
+		// 	userEmail, requestDate, additionalNotes
+		// }}
+
+		// await requestedFoodCollection.insertOne(requestedFood)
 		res.send(result)
 	})
 
