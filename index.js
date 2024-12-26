@@ -42,11 +42,40 @@ async function run() {
 		
 	})
 
-	app.get('/featured-foods',async(req, res) => {
-		// const food = req.body;
-		const result = await foodCollection.find().sort({foodQuantity: 1}).limit(6).toArray()
-		res.send(result)
-	})
+	// app.get('/featured-foods',async(req, res) => {
+	// 	// const food = req.body;
+	// 	const result = await foodCollection.find().limit(6).toArray()
+	// 	res.send(result)
+	// })
+
+	app.get('/featured-foods', async (req, res) => {
+		
+			const result = await foodCollection
+				.aggregate([
+					{ 
+						$addFields: { 
+							foodQuantityAsNumber: { $toInt: "$foodQuantity" }
+						} 
+					},
+					{ 
+						$sort: { 
+							foodQuantityAsNumber: -1
+						} 
+					},
+					{ 
+						$limit: 6 
+					},
+					{ 
+						$project: { 
+							foodQuantityAsNumber: 0
+						} 
+					}
+				])
+				.toArray();
+			
+			res.send(result) 
+  })
+
 	app.get('/available-foods', async(req, res) => {
 		const query = {"foodUser.foodStatus": "available"}
 		// console.log(query)
@@ -91,14 +120,14 @@ async function run() {
 		  const allDonors = await foodCollection.aggregate([
 			{
 			  $group: {
-				_id: "$foodUser.donatorEmail", // Group by donator email
-				totalDonations: { $sum: 1 }, // Count the number of donations
+				_id: "$foodUser.donatorEmail",
+				totalDonations: { $sum: 1 },
 			  },
 			},
-			{ $sort: { totalDonations: -1 } }, // Sort by total donations (descending)
+			{ $sort: { totalDonations: -1 } }, 
 		  ]).toArray();
 	  
-		  res.send(allDonors); // Send all donor stats
+		  res.send(allDonors);
 		} catch (error) {
 		  console.error("Error fetching all donor stats:", error);
 		  res.status(500).send({ message: "Failed to fetch all donor stats" });
@@ -110,11 +139,11 @@ async function run() {
 
 	app.patch('/myFood/:foodId',async(req,res)=> {
 		const  id = req.params.foodId;
-		console.log(id)
+	
 		const query = {_id: new ObjectId(id)};
-		console.log(query)
+		
 		const updatedFood = req.body;
-		console.log(updatedFood)
+		
 		const updatedDoc = {
 			$set: 
 				updatedFood
