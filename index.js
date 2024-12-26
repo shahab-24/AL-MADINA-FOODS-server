@@ -1,14 +1,21 @@
 const  express = require('express');
 const app = express();
 const cors = require('cors');
+const jwt = require('jsonwebtoken')
+const cookieParser = require('cookie-parser')
 require('dotenv').config()
+
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const { configDotenv } = require('dotenv');
 const port = process.env.PORT || 3000;
 
 
+app.use(cors({origin: ["http://localhost:5173"],
+	credentials: true
+}))
+app.use(cookieParser())
 app.use(express.json())
-app.use(cors())
+
 
 
 
@@ -32,7 +39,27 @@ async function run() {
 	const foodCollection = client.db("FoodsCollection").collection("foods");
 	const userCollection = client.db("FoodUsersDB").collection('users')
 	
-	const requestedFoodCollection = client.db("requestedFoodDB").collection("requestedFood")
+	// const requestedFoodCollection = client.db("requestedFoodDB").collection("requestedFood")
+
+	// jwt related api=====
+	app.post('/jwt', async(req,res)=>{
+
+		const user = req.body;
+		const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+			expiresIn: "1h"
+		})
+		res.cookie("token", token,  {
+			httpOnly: true,
+			secure: true
+		}).send({success: true})
+	})
+
+	app.post('/logout', async(req,res)=> {
+	res.clearCookie("token",{
+		httpOnly: true,
+		secure: true
+	}).send({success: true})
+	})
 
 	app.get('/foods', async(req, res) => {
 		const food = req.body;
@@ -168,7 +195,6 @@ async function run() {
 		const {foodId, userEmail, requestDate, additionalNotes} =req.body;
 
 		// const food = await foodCollection.findOne({_id: new ObjectId(foodId)})
-
 		const query = {_id: new ObjectId(foodId), "foodUser.foodStatus": "available"}
 		// const query = {_id: new ObjectId(foodId)}
 		const result = await foodCollection.updateOne(query, {
