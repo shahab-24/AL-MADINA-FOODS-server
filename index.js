@@ -16,6 +16,21 @@ app.use(cors({origin: ["http://localhost:5173"],
 app.use(cookieParser())
 app.use(express.json())
 
+const verifyToken =(req,res,next)=> {
+	const token = req.cookies?.token;
+
+	if(!token){
+		 return res.status(401).send({message: "unauthorized access"})
+	}
+
+	jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decode)=> {
+		if(err){
+			return  res.status(401).send({message: "unauthorized access"})
+		}
+		next()
+	})
+}
+
 
 
 
@@ -110,7 +125,7 @@ async function run() {
 		res.send(result)
 	})
 	
-	app.get("/food-details/:id", async(req,res) => {
+	app.get("/food-details/:id", verifyToken, async(req,res) => {
 		const id = req.params.id;
 		
 		const query = {_id : new ObjectId(id)}
@@ -119,7 +134,7 @@ async function run() {
 
 	})
 
-	app.get('/myRequest', async(req, res)=> {
+	app.get('/myRequest',verifyToken, async(req, res)=> {
 		const {userEmail} = req.query;
 	
 		const result = await foodCollection.find({"foodUser.foodStatus" : "requested", "requestedBy.userEmail": userEmail}).toArray()
@@ -127,7 +142,7 @@ async function run() {
 		res.send(result)
 	})
 
-	app.get('/myFood',async(req,res) => {
+	app.get('/myFood',verifyToken,async(req,res) => {
 		const {userEmail} = req.query;
 		const query = {"foodUser.donatorEmail": userEmail}
 		const result = await foodCollection.find(query).toArray();
@@ -164,7 +179,7 @@ async function run() {
 	  
 	  
 
-	app.patch('/myFood/:foodId',async(req,res)=> {
+	app.patch('/myFood/:foodId',verifyToken,async(req,res)=> {
 		const  id = req.params.foodId;
 	
 		const query = {_id: new ObjectId(id)};
@@ -182,7 +197,7 @@ async function run() {
 	})
 
 
-	app.post('/add-foods', async(req, res) => {
+	app.post('/add-foods',verifyToken ,async(req, res) => {
 		const food = req.body;
 		const result = await foodCollection.insertOne(food)
 		res.send(result)
@@ -214,7 +229,7 @@ async function run() {
 		res.send(result)
 	})
 
-	app.delete('/myFood/:foodId', async (req,res) => {
+	app.delete('/myFood/:foodId', verifyToken, async (req,res) => {
 		const id = req.params.foodId;
 		const query = {_id: new ObjectId(id)}
 		const result = await foodCollection.deleteOne(query)
