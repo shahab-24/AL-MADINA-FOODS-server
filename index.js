@@ -10,29 +10,32 @@ const { configDotenv } = require('dotenv');
 const port = process.env.PORT || 3000;
 
 
-app.use(cors({origin: ["http://localhost:5173"],
+app.use(cors({
+	origin: ["http://localhost:5173",
+		"http://localhost:5175",
+	"https://al-madina-foods.web.app",
+	"https://al-madina-foods.firebaseapp.com"
+],
 	credentials: true
 }))
 app.use(cookieParser())
 app.use(express.json())
 
+
+
 const verifyToken =(req,res,next)=> {
 	const token = req.cookies?.token;
-
 	if(!token){
 		 return res.status(401).send({message: "unauthorized access"})
 	}
-
 	jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decode)=> {
 		if(err){
 			return  res.status(401).send({message: "unauthorized access"})
 		}
+		req.user = decode;
 		next()
 	})
 }
-
-
-
 
 
 
@@ -64,17 +67,22 @@ async function run() {
 			expiresIn: "1h"
 		})
 		res.cookie("token", token,  {
-			httpOnly: true,
-			secure: true
+			httpOnly:true,
+			secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+
 		}).send({success: true})
 	})
 
 	app.post('/logout', async(req,res)=> {
 	res.clearCookie("token",{
 		httpOnly: true,
-		secure: true
+		secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+
 	}).send({success: true})
 	})
+
 
 	app.get('/foods', async(req, res) => {
 		const food = req.body;
@@ -82,6 +90,12 @@ async function run() {
 		res.send(result)
 
 		
+	})
+	app.get("/food-details/:id",async(req, res)=> {
+		const foodId = req.params.id;
+		const query = {_id: new ObjectId(foodId)};
+		const result = await foodCollection.findOne(query);
+		res.send(result)
 	})
 
 	// app.get('/featured-foods',async(req, res) => {
@@ -91,7 +105,6 @@ async function run() {
 	// })
 
 	app.get('/featured-foods', async (req, res) => {
-		
 			const result = await foodCollection
 				.aggregate([
 					{ 
@@ -114,29 +127,36 @@ async function run() {
 					}
 				])
 				.toArray();
-			
 			res.send(result) 
   })
 
-	app.get('/available-foods', async(req, res) => {
-		const query = {"foodUser.foodStatus": "available"}
-		// console.log(query)
-		const result = await foodCollection.find(query).sort({expireDate: 1}).toArray();
-		res.send(result)
-	})
+  app.get('/available-foods', async (req, res) => {
+    const query = { "foodUser.foodStatus": "available" };
+    const result = await foodCollection.find(query).sort({ expireDate: 1 }).toArray();
+    res.send(result);
+});
+
 	
-	app.get("/food-details/:id", verifyToken, async(req,res) => {
-		const id = req.params.id;
-		
-		const query = {_id : new ObjectId(id)}
-		const result = await foodCollection.findOne(query)
-		res.send(result)
+app.get('/myRequest', verifyToken, async (req, res) => {
+    try {
+        const { userEmail } = req.query;
+        if (!userEmail) {
+            return res.status(400).send({ message: "User email is required." });
+        }
+        const query = { 
+            "foodUser.foodStatus": "requested", 
+            "requestedBy.userEmail": userEmail 
+        };
+        const result = await foodCollection.find(query).toArray();
+        res.send(result);
+    } catch (error) {
+        console.error("Error fetching my requests:", error);
+        res.status(500).send({ message: "Failed to fetch requests." });
+    }
+});
 
-	})
-
-	app.get('/myRequest',verifyToken, async(req, res)=> {
+	app.get('/myRequest',verifyToken,async(req, res)=> {
 		const {userEmail} = req.query;
-	
 		const result = await foodCollection.find({"foodUser.foodStatus" : "requested", "requestedBy.userEmail": userEmail}).toArray()
 		// const result = await requestedFoodCollection.find({"requestedBy.userEmail": userEmail}).toArray()
 		res.send(result)
@@ -149,8 +169,9 @@ async function run() {
 		res.send(result)
 	})
 
+
+
 	app.get('/recent-foods', async (req, res) => {
-		
 		  const recentFoods = await foodCollection.find().sort({ expireDate: -1 }).limit(5).toArray()
 		  res.send(recentFoods)
 
@@ -222,12 +243,40 @@ async function run() {
 		})
 
 		// const requestedFood = { ...food, requestedBy: {
-		// 	userEmail, requestDate, additionalNotes
-		// }}
 
-		// await requestedFoodCollection.insertOne(requestedFood)
 		res.send(result)
 	})
+
+
+	// app.post('/request-food', verifyToken, async (req, res) => {
+	// 	const { foodId, userEmail, requestDate, additionalNotes } = req.body;
+	
+	// 	try {
+	// 		const query = { _id: new ObjectId(foodId), "foodUser.foodStatus": "available" };
+	// 		const update = {
+	// 			$set: {
+	// 				"foodUser.foodStatus": "requested",
+	// 				requestedBy: {
+	// 					userEmail,
+	// 					requestDate,
+	// 					additionalNotes
+	// 				},
+	// 			}
+	// 		};
+	
+	// 		const result = await foodCollection.updateOne(query, update);
+	
+	// 		if (result.matchedCount === 0) {
+	// 			return res.status(404).send({ message: "Food not found or already requested." });
+	// 		}
+	
+	// 		res.send({ success: true, message: "Food requested successfully." });
+	// 	} catch (error) {
+	// 		console.error("Error requesting food:", error);
+	// 		res.status(500).send({ message: "Failed to request food." });
+	// 	}
+	// });
+	
 
 	app.delete('/myFood/:foodId', verifyToken, async (req,res) => {
 		const id = req.params.foodId;
