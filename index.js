@@ -147,7 +147,7 @@ async function run() {
             },
           },
           {
-            $limit: 6,
+            $limit: 8,
           },
           {
             $project: {
@@ -204,7 +204,7 @@ async function run() {
       const recentFoods = await foodCollection
         .find()
         .sort({ expireDate: -1 })
-        .limit(5)
+        .limit(6)
         .toArray();
       res.send(recentFoods);
     });
