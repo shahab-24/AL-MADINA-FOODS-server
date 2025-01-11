@@ -18,7 +18,7 @@ app.use(cors({
 
 	"https://al-madina-foods.firebaseapp.com"
 ],
-methods: ['GET', 'POST', 'PUT', 'DELETE'],
+methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
 
 allowedHeaders: ['Content-Type', 'Authorization'],
 	credentials: true
@@ -54,10 +54,9 @@ const verifyToken = (req, res, next) => {
   });
 };
 
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.3jtn0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.3jtn0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
 
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.3jtn0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -72,6 +71,7 @@ async function run() {
   try {
     const foodCollection = client.db("FoodsCollection").collection("foods");
     const userCollection = client.db("FoodUsersDB").collection("users");
+    const volunteerCollection = client.db("VolunteerUsersDB").collection("volunteers");
 
     // const requestedFoodCollection = client.db("requestedFoodDB").collection("requestedFood")
 
@@ -108,6 +108,18 @@ async function run() {
         })
         .send({ success: true });
     });
+
+    // volunteer form====
+    app.post('/volunteer-request',verifyToken, async (req, res) => {
+        // const { name, email, phone, message } = req.body;
+        const volunteer = req.body
+        console.log(volunteer)
+        const result = await volunteerCollection.insertOne(volunteer)
+        res.send(result)
+        // Save the data to your database (e.g., MongoDB).
+        // res.status(200).json({ message: 'Volunteer request submitted successfully!' });
+      });
+      
 
     app.get("/foods", async (req, res) => {
       const food = req.body;
